@@ -20,6 +20,14 @@ impl fmt::Display for ScannerError {
     }
 }
 
+impl ScannerError {
+    pub fn line(&self) -> usize {
+        match *self {
+            ScannerError::UnknownCharacter(_, line) => line,
+        }
+    }
+}
+
 pub struct Scanner<'a> {
     source: iter::Peekable<str::Chars<'a>>,
     line: usize,

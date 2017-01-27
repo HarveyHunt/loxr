@@ -21,7 +21,7 @@ impl Lox {
         let mut tokens: Vec<Token> = Vec::new();
         match scanner.scan_tokens() {
             Ok(ts) => tokens = ts,
-            Err(err) => self.report(0, format!("{}", err)),
+            Err(err) => self.report(err.line(), format!("{}", err)),
         };
 
         println!("{:?}", tokens);
@@ -52,7 +52,7 @@ impl Lox {
         }
     }
 
-    pub fn report(&mut self, line: u16, message: String) {
+    pub fn report(&mut self, line: usize, message: String) {
         println!("[line {}] Error: {}", line, message);
         self.had_error = true;
     }
