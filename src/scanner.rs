@@ -50,18 +50,21 @@ impl<'a> Scanner<'a> {
 
         loop {
             self.skip_whitespace();
-
-            let token = self.scan_token();
-            match token {
-                Ok(token) => {
-                    if token.ttype == TokenType::EOF {
-                        tokens.push(token);
-                        break;
-                    } else {
-                        tokens.push(token);
+            let c = self.source.next();
+            match c {
+                Some(c) => {
+                    // TODO: This feels like a hacky way of stripping comments out...
+                    if !self.skip_comments(c) {
+                        match self.scan_token(c) {
+                            Ok(token) => tokens.push(token),
+                            Err(err) => return Err(err),
+                        }
                     }
                 }
-                Err(err) => return Err(err),
+                None => {
+                    tokens.push(self.simple_token(TokenType::EOF));
+                    break;
+                }
             }
         }
 
@@ -72,14 +75,25 @@ impl<'a> Scanner<'a> {
         while let Some(&c) = self.source.peek() {
             if !c.is_whitespace() {
                 return;
-            }
-
-            if c == '\n' {
+            } else if c == '\n' {
                 self.line += 1;
             }
 
             self.source.next();
         }
+    }
+
+    fn skip_comments(&mut self, c: char) -> bool {
+        if c == '/' && self.source.peek() == Some(&'/') {
+            while let Some(&c) = self.source.peek() {
+                self.source.next();
+                if c == '\n' {
+                    self.line += 1;
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     fn simple_token(&self, ttype: TokenType) -> Token {
@@ -96,29 +110,28 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn scan_token(&mut self) -> ScannerResult<Token> {
+    fn scan_token(&mut self, c: char) -> ScannerResult<Token> {
         use token::TokenType::*;
-        match self.source.next() {
-            Some(',') => Ok(self.simple_token(COMMA)),
-            Some('.') => Ok(self.simple_token(DOT)),
-            Some('*') => Ok(self.simple_token(STAR)),
-            Some('-') => Ok(self.simple_token(MINUS)),
-            Some('+') => Ok(self.simple_token(PLUS)),
-            Some('/') => Ok(self.simple_token(SLASH)),
-            Some(';') => Ok(self.simple_token(SEMICOLON)),
-            Some('(') => Ok(self.simple_token(LPAREN)),
-            Some(')') => Ok(self.simple_token(RPAREN)),
-            Some('{') => Ok(self.simple_token(LBRACE)),
-            Some('}') => Ok(self.simple_token(RBRACE)),
+        match c {
+            ',' => Ok(self.simple_token(COMMA)),
+            '.' => Ok(self.simple_token(DOT)),
+            '*' => Ok(self.simple_token(STAR)),
+            '-' => Ok(self.simple_token(MINUS)),
+            '+' => Ok(self.simple_token(PLUS)),
+            ';' => Ok(self.simple_token(SEMICOLON)),
+            '(' => Ok(self.simple_token(LPAREN)),
+            ')' => Ok(self.simple_token(RPAREN)),
+            '{' => Ok(self.simple_token(LBRACE)),
+            '}' => Ok(self.simple_token(RBRACE)),
 
-            Some('=') => Ok(self.scan_operator(EQUALS, EQUALS_EQUALS)),
-            Some('!') => Ok(self.scan_operator(EXCLAM, EXCLAM_EQUALS)),
-            Some('<') => Ok(self.scan_operator(LESS, LESS_EQUALS)),
-            Some('>') => Ok(self.scan_operator(GREATER, GREATER_EQUALS)),
+            '/' => Ok(self.simple_token(SLASH)),
 
-            Some(c @ _) => Err(ScannerError::UnknownCharacter(c, self.line)),
+            '=' => Ok(self.scan_operator(EQUALS, EQUALS_EQUALS)),
+            '!' => Ok(self.scan_operator(EXCLAM, EXCLAM_EQUALS)),
+            '<' => Ok(self.scan_operator(LESS, LESS_EQUALS)),
+            '>' => Ok(self.scan_operator(GREATER, GREATER_EQUALS)),
 
-            None => Ok(self.simple_token(EOF)),
+            c @ _ => Err(ScannerError::UnknownCharacter(c, self.line)),
         }
     }
 }
