@@ -8,6 +8,7 @@ pub type ScannerResult<T> = Result<T, ScannerError>;
 #[derive(Debug)]
 pub enum ScannerError {
     UnknownCharacter(char, usize),
+    UnterminatedString(usize),
 }
 
 impl fmt::Display for ScannerError {
@@ -15,6 +16,9 @@ impl fmt::Display for ScannerError {
         match *self {
             ScannerError::UnknownCharacter(c, line) => {
                 write!(f, "Unrecognised character {} at line {}", c, line)
+            }
+            ScannerError::UnterminatedString(line) => {
+                write!(f, "Unterminated string at line {}", line)
             }
         }
     }
@@ -24,6 +28,7 @@ impl ScannerError {
     pub fn line(&self) -> usize {
         match *self {
             ScannerError::UnknownCharacter(_, line) => line,
+            ScannerError::UnterminatedString(line) => line,
         }
     }
 }
@@ -96,6 +101,25 @@ impl<'a> Scanner<'a> {
         return false;
     }
 
+    fn parse_string(&mut self) -> ScannerResult<Token> {
+        let mut string = String::new();
+        let line = self.line;
+
+        while let Some(&c) = self.source.peek() {
+            if c == '"' {
+                // Skip closing "
+                self.source.next();
+                return Ok(Token::new(TokenType::STR, self.line, string));
+            } else if c == '\n' {
+                self.line += 1;
+            }
+            string.push(self.source.next().unwrap());
+        }
+
+        return Err(ScannerError::UnterminatedString(line));
+    }
+
+
     fn simple_token(&self, ttype: TokenType) -> Token {
         Token::new(ttype, self.line, String::new())
     }
@@ -131,6 +155,7 @@ impl<'a> Scanner<'a> {
             '<' => Ok(self.scan_operator(LESS, LESS_EQUALS)),
             '>' => Ok(self.scan_operator(GREATER, GREATER_EQUALS)),
 
+            '"' => self.parse_string(),
             c @ _ => Err(ScannerError::UnknownCharacter(c, self.line)),
         }
     }
