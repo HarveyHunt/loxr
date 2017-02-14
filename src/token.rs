@@ -57,13 +57,16 @@ pub struct Token {
     // TODO: Make these const.
     pub ttype: TokenType,
     line: usize,
-    // TODO: Maybe make this an Option?
-    lexeme: String,
-    literal: Literal,
+    lexeme: Option<String>,
+    literal: Option<Literal>,
 }
 
 impl Token {
-    pub fn new(ttype: TokenType, line: usize, lexeme: String, literal: Literal) -> Token {
+    pub fn new(ttype: TokenType,
+               line: usize,
+               lexeme: Option<String>,
+               literal: Option<Literal>)
+               -> Token {
         Token {
             ttype: ttype,
             line: line,

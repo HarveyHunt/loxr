@@ -111,8 +111,8 @@ impl<'a> Scanner<'a> {
                 self.source.next();
                 return Ok(Token::new(TokenType::STR,
                                      self.line,
-                                     string.clone(),
-                                     Literal::Str(string)));
+                                     Some(string.clone()),
+                                     Some(Literal::Str(string))));
             } else if c == '\n' {
                 self.line += 1;
             }
@@ -137,11 +137,14 @@ impl<'a> Scanner<'a> {
             self.source.next();
         }
         let float: f64 = string.parse().unwrap();
-        return Ok(Token::new(TokenType::NUMBER, self.line, string, Literal::Float(float)));
+        return Ok(Token::new(TokenType::NUMBER,
+                             self.line,
+                             Some(string),
+                             Some(Literal::Float(float))));
     }
 
     fn simple_token(&self, ttype: TokenType) -> Token {
-        Token::new(ttype, self.line, String::new(), Literal::Str(String::new()))
+        Token::new(ttype, self.line, None, None)
     }
 
     fn scan_operator(&mut self, ttype: TokenType, equality_ttype: TokenType) -> Token {
