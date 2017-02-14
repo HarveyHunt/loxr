@@ -101,6 +101,22 @@ impl<'a> Scanner<'a> {
         return false;
     }
 
+    fn parse_identifier(&mut self, c: char) -> ScannerResult<Token> {
+        let mut string = String::new();
+        string.push(c);
+
+        while let Some(&c) = self.source.peek() {
+            if !c.is_alphabetic() && c != '_' && !c.is_digit(10) {
+                break;
+            }
+            string.push(c);
+            self.source.next();
+        }
+
+        // TODO: Check if the identifier is a keyword.
+        return Ok(Token::new(TokenType::IDENT, self.line, Some(string), None));
+    }
+
     fn parse_string(&mut self) -> ScannerResult<Token> {
         let mut string = String::new();
         let line = self.line;
@@ -182,6 +198,8 @@ impl<'a> Scanner<'a> {
             c @ _ => {
                 if c.is_digit(10) {
                     self.parse_number(c)
+                } else if c.is_alphabetic() || c == '_' || c.is_digit(10) {
+                    self.parse_identifier(c)
                 } else {
                     Err(ScannerError::UnknownCharacter(c, self.line))
                 }
