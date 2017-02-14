@@ -1,5 +1,5 @@
 [package]
-name = "rlox"
+name = "loxr"
 version = "0.1.0"
 authors = ["Harvey Hunt <harveyhuntnexus@gmail.com>"]
 

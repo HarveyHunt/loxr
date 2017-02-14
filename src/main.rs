@@ -13,6 +13,6 @@ fn main() {
     } else if args.len() == 2 {
         lox.runfile(path::PathBuf::from(&args[1]));
     } else {
-        println!("usage: rlox [script]");
+        println!("usage: loxr [script]");
     }
 }
