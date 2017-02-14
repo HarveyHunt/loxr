@@ -46,6 +46,12 @@ pub enum TokenType {
     EOF,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum Literal {
+    Str(String),
+    Float(f64),
+}
+
 #[derive(Clone, Debug)]
 pub struct Token {
     // TODO: Make these const.
@@ -53,14 +59,16 @@ pub struct Token {
     line: usize,
     // TODO: Maybe make this an Option?
     lexeme: String,
+    literal: Literal,
 }
 
 impl Token {
-    pub fn new(ttype: TokenType, line: usize, lexeme: String) -> Token {
+    pub fn new(ttype: TokenType, line: usize, lexeme: String, literal: Literal) -> Token {
         Token {
             ttype: ttype,
             line: line,
             lexeme: lexeme,
+            literal: literal,
         }
     }
 }

@@ -1,4 +1,4 @@
-use token::{Token, TokenType};
+use token::{Token, TokenType, Literal};
 use std::str;
 use std::fmt;
 use std::iter;
@@ -109,7 +109,10 @@ impl<'a> Scanner<'a> {
             if c == '"' {
                 // Skip closing "
                 self.source.next();
-                return Ok(Token::new(TokenType::STR, self.line, string));
+                return Ok(Token::new(TokenType::STR,
+                                     self.line,
+                                     string.clone(),
+                                     Literal::Str(string)));
             } else if c == '\n' {
                 self.line += 1;
             }
@@ -119,9 +122,26 @@ impl<'a> Scanner<'a> {
         return Err(ScannerError::UnterminatedString(line));
     }
 
+    fn parse_number(&mut self, c: char) -> ScannerResult<Token> {
+        let mut string = String::new();
+        string.push(c);
+
+        while let Some(&c) = self.source.peek() {
+            if c == '.' {
+                string.push(c);
+            } else if c.is_digit(10) {
+                string.push(c);
+            } else {
+                break;
+            }
+            self.source.next();
+        }
+        let float: f64 = string.parse().unwrap();
+        return Ok(Token::new(TokenType::NUMBER, self.line, string, Literal::Float(float)));
+    }
 
     fn simple_token(&self, ttype: TokenType) -> Token {
-        Token::new(ttype, self.line, String::new())
+        Token::new(ttype, self.line, String::new(), Literal::Str(String::new()))
     }
 
     fn scan_operator(&mut self, ttype: TokenType, equality_ttype: TokenType) -> Token {
@@ -156,7 +176,13 @@ impl<'a> Scanner<'a> {
             '>' => Ok(self.scan_operator(GREATER, GREATER_EQUALS)),
 
             '"' => self.parse_string(),
-            c @ _ => Err(ScannerError::UnknownCharacter(c, self.line)),
+            c @ _ => {
+                if c.is_digit(10) {
+                    self.parse_number(c)
+                } else {
+                    Err(ScannerError::UnknownCharacter(c, self.line))
+                }
+            }
         }
     }
 }
