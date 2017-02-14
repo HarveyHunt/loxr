@@ -2,6 +2,7 @@ use token::{Token, TokenType, Literal};
 use std::str;
 use std::fmt;
 use std::iter;
+use std::collections;
 
 pub type ScannerResult<T> = Result<T, ScannerError>;
 
@@ -38,15 +39,36 @@ pub struct Scanner<'a> {
     line: usize,
     start: usize,
     offset: usize,
+    keywords: collections::HashMap<&'static str, TokenType>,
 }
 
 impl<'a> Scanner<'a> {
     pub fn new(source: &str) -> Scanner {
+        let mut keywords: collections::HashMap<&str, TokenType> = collections::HashMap::new();
+
+        use self::TokenType::*;
+        keywords.insert("or", OR);
+        keywords.insert("and", AND);
+        keywords.insert("if", IF);
+        keywords.insert("else", ELSE);
+        keywords.insert("var", VAR);
+        keywords.insert("for", FOR);
+        keywords.insert("while", WHILE);
+        keywords.insert("fun", FUN);
+        keywords.insert("class", CLASS);
+        keywords.insert("super", SUPER);
+        keywords.insert("this", THIS);
+        keywords.insert("return", RETURN);
+        keywords.insert("true", TRUE);
+        keywords.insert("false", FALSE);
+        keywords.insert("nil", NIL);
+
         Scanner {
             source: source.chars().peekable(),
             line: 1,
             start: 0,
             offset: 0,
+            keywords: keywords,
         }
     }
 
@@ -113,8 +135,10 @@ impl<'a> Scanner<'a> {
             self.source.next();
         }
 
-        // TODO: Check if the identifier is a keyword.
-        return Ok(Token::new(TokenType::IDENT, self.line, Some(string), None));
+        match self.keywords.get(&*string) {
+            Some(keyword_type) => Ok(self.simple_token(keyword_type.clone())),
+            None => Ok(Token::new(TokenType::IDENT, self.line, Some(string), None)),
+        }
     }
 
     fn parse_string(&mut self) -> ScannerResult<Token> {
